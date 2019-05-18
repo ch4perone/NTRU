@@ -1,18 +1,22 @@
 import numpy as np
+from ntru import *
 
-N = 11
-p = 3
-q = 32
+while True:
+	try:
+		F = generatePolynomial(N)
+		Fp, Fq = invertPolynomial(F,p,q)
+		break
+	except sym.polys.polyerrors.NotInvertible:
+		pass
 
-f = np.array([-1,1,0,0,1,0, -1, 0,1,1,-1])
-g = np.array([-1,0,-1,0,0,1,0,1,1,0,-1])
+G = generatePolynomial(N)
+xN = toPoly(xN)
 
-Fp = 1 #todo
-Fq = np.array([30, 18, 20, 22, 16, 15, 4, 16, 6, 9, 5]) #todo euclid inverse
+h = sym.rem(Fq.mul_ground(p).mul(G), xN, symmetric=False, modulus = q)
 
-xN = np.array([1, 0,0,0,0,0,0,0,0,0,0,-1])
+# savePolynomialListToFile([F,Fp], "./private_key.txt")
+# savePolynomialToFile(h, "./public_key.txt")
 
-
-_, rem = np.polydiv( np.polymul(p * Fq, g), xN)
-h = rem % q
 print(h)
+
+#todo save private and public key
