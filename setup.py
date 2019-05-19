@@ -10,15 +10,11 @@ while True:
 		pass
 
 G = generatePolynomial(N)
-xN = toPoly(xN)
 
-h = sym.rem(Fq.mul_ground(p).mul(G), xN, symmetric=False, modulus = q)
+h = p*Fq*G
+h = sym.rem(h, xN, symmetric=False, modulus = q)
 
 savePolynomialToFile(F, "./private_key_F.txt")
 savePolynomialToFile(Fp, "./private_key_Fp.txt")
-savePolynomialToFile(h, "./public_key.txt")
 
-print(h)
-h = readPolynomialFromFile("./public_key.txt")
-print(h)
-#todo save private and public key
+savePolynomialToFile(h, "./public_key.txt")

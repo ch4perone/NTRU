@@ -9,21 +9,23 @@ import dill
 #
 
 # public parameter setup
-N = 11            # 251 is used in most commercial applications, for improved security can become 347 or better 503 (must be prime)
+N = 251          # 251 is used in most commercial applications, for improved security can become 347 or better 503 (must be prime)
 p = 3               # most commonly used, needs to be relatively small 
-q = 61          # must be relatively prime to p and much larger than p              
+q = 128          # must be relatively prime to p and much larger than p              
 
 xN = [0] * (N + 1)  # ring polynomial (x^N - 1)
 xN[0] = 1
 xN[N] = -1
 
-def toPoly(poly):
+
+def toPoly(poly,l=N):
     x = sym.Symbol('x')
     f = 0
     for i in range(len(poly)):
-        f += (x**i)*(poly[N-1-i])
+        f += (x**i)*(poly[l-1-i])
     return sym.poly(f)
 
+xN = toPoly(xN,N+1)
 
 def generatePolynomial(N):
     poly = np.array([random.randint(-1, 1) for i in range(N)])
@@ -44,7 +46,7 @@ def savePolynomialToFile(e, path):
 
 def readMessageFromFile(path):
     with open(path, "r") as infile:
-        msg = infile.read()  # TODO find a better way
+        msg = infile.read()
         return msg
 
 
@@ -52,41 +54,51 @@ def readPolynomialFromFile(path):
     return dill.load(open(path, "rb"))
 
 
-def characterFromBinaryPolynomial(poly):
-    b = ''.join([str(x) for x in poly])
-    return chr(int(b, 2))
+def toTernary(n):
+    e = n // 3
+    q = n % 3
+    if n == 0:
+        return [0]
+    elif e == 0:
+        return [q]
+    else:
+        return toTernary(e) + [q]
 
-
-def characterToBinaryPolynomial(char):  # TODO find a better way
-    poly = [0] * N
-    bitstring = format(ord(char), 'b')
-    for i in range(len(bitstring)):
-        if bitstring[i] == '1':
-            poly[i + (N - len(bitstring))] = 1
-    return poly
-
-
-def messageToBinaryPolynomials(msg):
-    M = np.array([])
+def messageToTernary(msg):
+    poly = []
     for char in msg:
-        m = characterToBinaryPolynomial(char)
-        if M.size == 0:
-            M = np.array([m])
-        else:
-            M = np.append(M, [m], axis=0)
-    return M
+        ternary = toTernary(ord(char))
+        poly += [0] * (6 - len(ternary)) + ternary
+    return [x - 1 for x in poly]
+
+
+def fromTernary(ternaryTuple):
+    dec = 0
+    for i in range(len(ternaryTuple)):
+        dec += ternaryTuple[len(ternaryTuple) - (i+1)] * 3 ** i
+    return dec
+
+def messageFromTernary(poly):
+    poly = poly.all_coeffs()
+    poly = [x + 1 for x in poly]
+    msg = ""
+    i = 0
+    while i < len(poly):
+        x = fromTernary(poly[i:i + 6])
+        msg += chr(x)
+        i += 6
+    return msg
 
 
 def encrypt(m, h, r):
-    e = toPoly(r).mul(toPoly(h))
-    e = e.add(toPoly(m))
+    e = r*h
+    e = e + toPoly(m,len(m))
     e = sym.rem(e, xN, symmetric=False, modulus = q)
     return e
 
 def decrypt(f, e, fp):
-    a = toPoly(f).mul(toPoly(e))
-    a = sym.rem(a, xN, symmetric=False, modulus = q)
-    #TODO CENTERING -q/2 q/2
-    m = toPoly(fp).mul(a)
-    m = sym.rem(m, xN, symmetric=False, modulus = p)
+    a = f*e
+    a = sym.rem(a, xN, modulus = q)
+    m = fp*a
+    m = sym.rem(m, xN, modulus = p)
     return m
