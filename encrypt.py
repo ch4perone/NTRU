@@ -15,7 +15,7 @@ args = parser.parse_args()
 m = messageToTernary(args.message)
 h = readPolynomialFromFile(args.publicKey)
 
-r = generatePolynomial(N)
+r = generatePolynomial(len(m))
 e = encrypt(m, h, r)
 
 savePolynomialToFile(e, "./message_enc.txt")

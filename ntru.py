@@ -9,9 +9,9 @@ import dill
 #
 
 # public parameter setup
-N = 251          # 251 is used in most commercial applications, for improved security can become 347 or better 503 (must be prime)
+N = 503         # 251 is used in most commercial applications, for improved security can become 347 or better 503 (must be prime)
 p = 3               # most commonly used, needs to be relatively small 
-q = 128          # must be relatively prime to p and much larger than p              
+q = 257         # must be relatively prime to p and much larger than p              
 
 xN = [0] * (N + 1)  # ring polynomial (x^N - 1)
 xN[0] = 1
@@ -29,7 +29,7 @@ xN = toPoly(xN,N+1)
 
 def generatePolynomial(N):
     poly = np.array([random.randint(-1, 1) for i in range(N)])
-    return toPoly(poly)
+    return toPoly(poly,N)
 
 
 def invertPolynomial(f,p,q):
