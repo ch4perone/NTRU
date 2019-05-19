@@ -1,22 +1,25 @@
 import numpy as np
 from ntru import *
 
-f = np.array([-1,1,0,0,1,0, -1, 0,1,1,-1])
-g = np.array([-1,0,-1,0,0,1,0,1,1,0,-1])
 
-Fp = 1 #todo
-Fq = np.array([30, 18, 20, 22, 16, 15, 4, 16, 6, 9, 5]) #todo euclid inverse
+while True:
+	try:
+		F = generatePolynomial(N)
+		Fp, Fq = invertPolynomial(F,p,q)
+		break
+	except sym.polys.polyerrors.NotInvertible:
+		pass
 
-xN = np.array([1, 0,0,0,0,0,0,0,0,0,0,-1])
+G = generatePolynomial(N)
+xN = toPoly(xN)
 
+h = sym.rem(Fq.mul_ground(p).mul(G), xN, symmetric=False, modulus = q)
 
-_, rem = np.polydiv( np.polymul(p * Fq, g), xN)
-h = rem % q
-h = h.astype(int)
-
-savePolynomialToFile(f, "./private_key.txt")
+savePolynomialToFile(F, "./private_key_F.txt")
+savePolynomialToFile(Fp, "./private_key_Fp.txt")
 savePolynomialToFile(h, "./public_key.txt")
 
-print(h)
 
-#todo save private and public key
+print(h)
+h = readPolynomialFromFile("./public_key.txt")
+print(h)

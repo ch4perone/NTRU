@@ -1,37 +1,46 @@
 import numpy as np
 import csv
 import random
+import sympy as sym
+import dill
+
 
 #
 # This file contains all functionality required for the NTRU cryptosystem
 #
 
 # public parameter setup
-N = 11
-p = 3
-q = 32
-xN = [0] * (N + 1)  # ring polynomial
+N = 11            # 251 is used in most commercial applications, for improved security can become 347 or better 503 (must be prime)
+p = 3               # most commonly used, needs to be relatively small 
+q = 61          # must be relatively prime to p and much larger than p              
+
+xN = [0] * (N + 1)  # ring polynomial (x^N - 1)
 xN[0] = 1
 xN[N] = -1
 
+def toPoly(poly):
+    x = sym.Symbol('x')
+    f = 0
+    for i in range(len(poly)):
+        f += (x**i)*(poly[N-1-i])
+    return sym.poly(f)
+
 
 def generatePolynomial(N):
-    return np.array([random.randint(0, q - 1) for i in range(N)])
+    poly = np.array([random.randint(-1, 1) for i in range(N)])
+    return toPoly(poly)
+
+
+def invertPolynomial(f,p,q):
+    x = sym.Symbol('x')
+    Fp = sym.polys.polytools.invert(f,x**N-1,domain=sym.GF(p, symmetric=False))
+    Fq = sym.polys.polytools.invert(f,x**N-1,domain=sym.GF(q, symmetric=False))
+    return Fp, Fq
 
 
 def savePolynomialToFile(e, path):
-    with open(path, "w") as outfile:
-        writer = csv.writer(outfile)
-        writer.writerow(e.astype(int))
-    return 1
-
-
-def savePolynomialListToFile(E, path):
-    with open(path, "w") as outfile:
-        writer = csv.writer(outfile)
-        for e in E:
-            writer.writerow(e.astype(int))
-    return 1
+    dill.dump(e, open(path, "wb"))
+    return
 
 
 def readMessageFromFile(path):
@@ -41,10 +50,7 @@ def readMessageFromFile(path):
 
 
 def readPolynomialFromFile(path):
-    with open(path, "r") as infile:
-        reader = csv.reader(infile)
-        poly = np.array(list(reader)[0], dtype=int)
-    return poly
+    return dill.load(open(path, "rb"))
 
 
 def characterFromBinaryPolynomial(poly):
@@ -73,7 +79,15 @@ def messageToBinaryPolynomials(msg):
 
 
 def encrypt(m, h, r):
-    e_hat = np.polyadd(np.polymul(r, h), m)
-    _, e = np.polydiv(e_hat, xN)
-    e = (e % q).astype(int)
+    e = toPoly(r).mul(toPoly(h))
+    e = e.add(toPoly(m))
+    e = sym.rem(e, xN, symmetric=False, modulus = q)
     return e
+
+def decrypt(f, e, fp):
+    a = toPoly(f).mul(toPoly(e))
+    a = sym.rem(a, xN, symmetric=False, modulus = q)
+    #TODO CENTERING -q/2 q/2
+    m = toPoly(fp).mul(a)
+    m = sym.rem(m, xN, symmetric=False, modulus = p)
+    return m
