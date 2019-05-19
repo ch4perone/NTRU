@@ -2,6 +2,7 @@ import numpy as np
 import csv
 import random
 import sympy as sym
+import dill
 
 #
 # This file contains all functionality required for the NTRU cryptosystem
@@ -23,9 +24,11 @@ def toPoly(poly):
         f += (x**i)*(poly[N-1-i])
     return sym.poly(f)
 
+
 def generatePolynomial(N):
     poly = np.array([random.randint(-1, 1) for i in range(N)])
     return toPoly(poly)
+
 
 def invertPolynomial(f,p,q):
     x = sym.Symbol('x')
@@ -35,18 +38,8 @@ def invertPolynomial(f,p,q):
 
 
 def savePolynomialToFile(e, path):
-    with open(path, "w") as outfile:
-        writer = csv.writer(outfile)
-        writer.writerow(e.astype(int))
-    return 1
-
-
-def savePolynomialListToFile(E, path):
-    with open(path, "w") as outfile:
-        writer = csv.writer(outfile)
-        for e in E:
-            writer.writerow(e.astype(int))
-    return 1
+    dill.dump(e, open(path, "wb"))
+    return
 
 
 def readMessageFromFile(path):
@@ -56,10 +49,7 @@ def readMessageFromFile(path):
 
 
 def readPolynomialFromFile(path):
-    with open(path, "r") as infile:
-        reader = csv.reader(infile)
-        poly = np.array(list(reader)[0], dtype=int)
-    return poly
+    return dill.load(open(path, "rb"))
 
 
 def characterFromBinaryPolynomial(poly):
